@@ -1,0 +1,332 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .app {
+    background: #0a0a0a;
+    min-height: 580px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1rem 3rem;
+    position: relative; overflow: hidden;
+    border-radius: var(--border-radius-lg);
+  }
+  .stars { position: absolute; inset: 0; pointer-events: none; }
+  .star { position: absolute; background: #fff; border-radius: 50%; }
+  .title {
+    font-size: 52px; font-weight: 900; color: #f5c842;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    margin-bottom: 0.4rem; position: relative; z-index: 1;
+    font-style: italic; font-family: Georgia, serif;
+  }
+  .subtitle {
+    color: #ccc; font-size: 15px; margin-bottom: 2.5rem;
+    position: relative; z-index: 1; font-family: sans-serif;
+  }
+  .dice-row {
+    display: flex; flex-direction: row; gap: 14px;
+    margin-bottom: 2.5rem; position: relative; z-index: 1;
+    justify-content: center; align-items: flex-start;
+  }
+  .die-card {
+    background: #1a1a1a; border: 1.5px solid #3a2800;
+    border-radius: 18px; width: 148px;
+    padding: 16px 14px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    box-shadow: 0 0 18px rgba(180,100,0,0.18);
+  }
+  .die-label {
+    color: #fff; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.15em; font-family: sans-serif; text-transform: uppercase;
+  }
+  .die-face-wrap { perspective: 600px; width: 116px; height: 116px; }
+  .die-face {
+    width: 116px; height: 116px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transform-style: preserve-3d;
+  }
+  .die-face.spin { animation: spin3d 0.9s cubic-bezier(0.3,0,0.2,1) forwards; }
+  @keyframes spin3d {
+    0%   { transform: rotateY(0deg) rotateX(0deg); }
+    25%  { transform: rotateY(130deg) rotateX(25deg); background: #ffffff; }
+    50%  { transform: rotateY(250deg) rotateX(-18deg); background: #ffffff; }
+    75%  { transform: rotateY(340deg) rotateX(8deg); }
+    100% { transform: rotateY(360deg) rotateX(0deg); }
+  }
+  .die-dot { width: 20px; height: 20px; background: #fff; border-radius: 50%; opacity: 0.95; }
+  .color-badge {
+    border-radius: 30px; padding: 6px 20px;
+    font-size: 13px; font-weight: 700; color: #fff;
+    font-family: sans-serif; letter-spacing: 0.02em;
+  }
+  .roll-btn {
+    background: #e6a800; color: #1a0a00; border: none;
+    border-radius: 40px; padding: 15px 54px;
+    font-size: 18px; font-weight: 800; cursor: pointer;
+    font-family: sans-serif; letter-spacing: 0.03em;
+    position: relative; z-index: 1;
+    box-shadow: 0 0 24px rgba(230,168,0,0.55), 0 0 8px rgba(230,168,0,0.3);
+    transition: background 0.15s, transform 0.1s;
+  }
+  .roll-btn:hover { background: #ffc700; }
+  .roll-btn:active { transform: scale(0.97); }
+  .roll-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .cutscene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 10; border-radius: var(--border-radius-lg);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .cutscene.visible { opacity: 1; pointer-events: all; }
+  .cs-bg { position: absolute; inset: 0; border-radius: var(--border-radius-lg); }
+  .cs-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
+  .cs-emoji {
+    font-size: 56px; line-height: 1;
+    animation: bob 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes bob {
+    from { transform: translateY(0) scale(1); }
+    to   { transform: translateY(-10px) scale(1.08); }
+  }
+  .cs-text {
+    font-size: 28px; font-weight: 900;
+    font-family: Georgia, serif; font-style: italic;
+    letter-spacing: 0.04em; text-align: center;
+    animation: textpulse 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes textpulse {
+    from { opacity: 0.8; transform: scale(1); }
+    to   { opacity: 1; transform: scale(1.04); }
+  }
+
+  .cs-theme-fingers .cs-bg  { background: rgba(10,10,26,0.92); }
+  .cs-theme-fingers .cs-text { color: #f5c842; }
+  .cs-theme-fate .cs-bg  { background: rgba(13,8,32,0.92); }
+  .cs-theme-fate .cs-text { color: #c084fc; }
+  .cs-theme-herewego .cs-bg  { background: rgba(10,26,10,0.92); }
+  .cs-theme-herewego .cs-text { color: #4ade80; }
+  .cs-theme-rainbow .cs-bg { background: rgba(10,0,16,0.92); }
+  .cs-theme-rainbow .cs-text {
+    background: linear-gradient(90deg,#ff4e4e,#ff9e00,#ffe600,#4dff91,#4dc8ff,#b44dff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 200% auto;
+    animation: rainbowshift 0.9s linear infinite, textpulse 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes rainbowshift { to { background-position: 200% center; } }
+  .cs-theme-surprise .cs-bg { background: rgba(10,10,10,0.92); }
+  .cs-theme-surprise .cs-text { color: #f472b6; }
+
+  .particle {
+    position: absolute; width: 7px; height: 7px;
+    border-radius: 50%; pointer-events: none;
+    animation: burst 0.9s ease-out forwards;
+  }
+  @keyframes burst {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; }
+  }
+</style>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Ketupat Dice — roll 4 color dice</h2>
+
+<div class="app" id="app">
+  <div class="stars" id="starsEl"></div>
+
+  <div class="cutscene" id="cutscene">
+    <div class="cs-bg"></div>
+    <div class="cs-content">
+      <div class="cs-emoji" id="csEmoji">🤞</div>
+      <div class="cs-text" id="csText">Fingers Crossed</div>
+    </div>
+  </div>
+
+  <div class="title">KETUP★T</div>
+  <div class="subtitle">Roll 4 color dice</div>
+
+  <div class="dice-row">
+    <div class="die-card">
+      <div class="die-label">DICE 1</div>
+      <div class="die-face-wrap"><div class="die-face" id="face-0" style="background:#f07020;"><div class="die-dot"></div></div></div>
+      <div class="color-badge" id="badge-0" style="background:#f07020;">Orange</div>
+    </div>
+    <div class="die-card">
+      <div class="die-label">DICE 2</div>
+      <div class="die-face-wrap"><div class="die-face" id="face-1" style="background:#28c660;"><div class="die-dot"></div></div></div>
+      <div class="color-badge" id="badge-1" style="background:#28c660;">Green</div>
+    </div>
+    <div class="die-card">
+      <div class="die-label">DICE 3</div>
+      <div class="die-face-wrap"><div class="die-face" id="face-2" style="background:#4a90e2;"><div class="die-dot"></div></div></div>
+      <div class="color-badge" id="badge-2" style="background:#4a90e2;">Blue</div>
+    </div>
+    <div class="die-card">
+      <div class="die-label">DICE 4</div>
+      <div class="die-face-wrap"><div class="die-face" id="face-3" style="background:#e85555;"><div class="die-dot"></div></div></div>
+      <div class="color-badge" id="badge-3" style="background:#e85555;">Red</div>
+    </div>
+  </div>
+
+  <button class="roll-btn" id="rollBtn">Roll All</button>
+</div>
+
+<script>
+const COLORS = [
+  { name:'Orange', bg:'#f07020' },
+  { name:'Green',  bg:'#28c660' },
+  { name:'Blue',   bg:'#4a90e2' },
+  { name:'Red',    bg:'#e85555' },
+  { name:'Purple', bg:'#9b59b6' },
+  { name:'Yellow', bg:'#f5c842' },
+];
+
+const CUTSCENES = [
+  { emoji:'🤞', text:'Fingers Crossed',    theme:'cs-theme-fingers'  },
+  { emoji:'🔮', text:'Let Fate Decide',    theme:'cs-theme-fate'     },
+  { emoji:'🎲', text:'Here We Go!',        theme:'cs-theme-herewego' },
+  { emoji:'🌈', text:'Ride the Rainbow',   theme:'cs-theme-rainbow'  },
+  { emoji:'🎨', text:'Colors Surprise Me', theme:'cs-theme-surprise' },
+];
+
+const starsEl = document.getElementById('starsEl');
+for (let i = 0; i < 60; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2.5 + 0.5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${0.2+Math.random()*0.45}`;
+  starsEl.appendChild(s);
+}
+
+const faces  = [0,1,2,3].map(i => document.getElementById('face-'+i));
+const badges = [0,1,2,3].map(i => document.getElementById('badge-'+i));
+const cutscene = document.getElementById('cutscene');
+let lastScene = -1, rolling = false;
+
+function pickScene() {
+  let idx;
+  do { idx = Math.floor(Math.random() * CUTSCENES.length); } while (idx === lastScene);
+  lastScene = idx;
+  return CUTSCENES[idx];
+}
+
+function spawnParticles() {
+  const app = document.getElementById('app');
+  const cols = ['#f5c842','#f07020','#28c660','#4a90e2','#e85555','#c084fc','#ff69b4','#00e5ff'];
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = Math.random() * 360;
+    const dist  = 60 + Math.random() * 140;
+    p.style.cssText = `left:50%;top:50%;background:${cols[Math.floor(Math.random()*cols.length)]};--tx:${Math.cos(angle*Math.PI/180)*dist}px;--ty:${Math.sin(angle*Math.PI/180)*dist}px;animation-delay:${Math.random()*0.15}s`;
+    app.appendChild(p);
+    setTimeout(() => p.remove(), 1100);
+  }
+}
+
+function playRollSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // Bright shaker burst at start
+    for (let i = 0; i < 12; i++) {
+      const t = now + i * 0.055;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < data.length; j++) data[j] = (Math.random()*2-1) * Math.pow(1 - j/data.length, 2);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      const vol = 0.22 - i * 0.012;
+      g.gain.setValueAtTime(vol > 0.04 ? vol : 0.04, t);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 3500 + Math.random() * 2000;
+      filter.Q.value = 0.8;
+      src.connect(filter); filter.connect(g); g.connect(ctx.destination);
+      src.start(t); src.stop(t + 0.045);
+    }
+
+    // Bright plastic click impacts
+    for (let i = 0; i < 6; i++) {
+      const t = now + 0.05 + i * 0.1 + Math.random() * 0.04;
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(900 + Math.random() * 400, t);
+      osc.frequency.exponentialRampToValueAtTime(200, t + 0.06);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.08);
+    }
+
+    // Rising magical shimmer at end
+    for (let i = 0; i < 5; i++) {
+      const t = now + 0.65 + i * 0.07;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      const freq = 600 + i * 220;
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.linearRampToValueAtTime(freq * 1.5, t + 0.12);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.1, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.15);
+    }
+  } catch(e) {}
+}
+
+document.getElementById('rollBtn').onclick = function() {
+  if (rolling) return;
+  rolling = true;
+  this.disabled = true;
+
+  playRollSound();
+
+  const scene = pickScene();
+  cutscene.className = 'cutscene ' + scene.theme;
+  document.getElementById('csEmoji').textContent = scene.emoji;
+  document.getElementById('csText').textContent = scene.text;
+  cutscene.classList.add('visible');
+
+  faces.forEach(f => {
+    f.classList.remove('spin');
+    void f.offsetWidth;
+    f.style.background = '#ffffff';
+    f.innerHTML = '';
+    f.classList.add('spin');
+  });
+  badges.forEach(b => {
+    b.style.background = '#fff';
+    b.style.color = '#aaa';
+    b.textContent = '...';
+  });
+
+  // Cutscene lasts only 900ms now
+  setTimeout(() => {
+    cutscene.classList.remove('visible');
+  }, 900);
+
+  setTimeout(() => {
+    faces.forEach(f => f.classList.remove('spin'));
+    spawnParticles();
+    for (let i = 0; i < 4; i++) {
+      const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+      faces[i].style.background = c.bg;
+      faces[i].innerHTML = '<div class="die-dot"></div>';
+      badges[i].style.background = c.bg;
+      badges[i].style.color = '#fff';
+      badges[i].textContent = c.name;
+    }
+    rolling = false;
+    document.getElementById('rollBtn').disabled = false;
+  }, 1050);
+};
+</script>
